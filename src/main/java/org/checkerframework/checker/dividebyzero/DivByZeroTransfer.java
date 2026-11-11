@@ -97,8 +97,51 @@ public class DivByZeroTransfer extends CFTransfer {
    */
   private AnnotationMirror arithmeticTransfer(
       BinaryOperator operator, AnnotationMirror lhs, AnnotationMirror rhs) {
-    // TODO
-    return top();
+    if (equal(lhs, bottom()) || equal(rhs, bottom())) {
+      return bottom();
+    }
+
+    AnnotationMirror zero = reflect(Zero.class);
+    AnnotationMirror nonZero = reflect(NonZero.class);
+    boolean lhsZero = equal(lhs, zero);
+    boolean rhsZero = equal(rhs, zero);
+
+    switch (operator) {
+      case PLUS:
+      case MINUS:
+        // Adding zero preserves the classification; negation does too.
+        if (lhsZero) {
+          return rhs;
+        }
+        if (rhsZero) {
+          return lhs;
+        }
+        return top();
+
+      case TIMES:
+        if (lhsZero || rhsZero) {
+          return zero;
+        }
+        // As in the exercise, assume integer overflow does not occur.
+        if (equal(lhs, nonZero) && equal(rhs, nonZero)) {
+          return nonZero;
+        }
+        return top();
+
+      case DIVIDE:
+      case MOD:
+        // A zero divisor has no normal result; the visitor reports the error.
+        if (rhsZero) {
+          return bottom();
+        }
+        if (lhsZero) {
+          return zero;
+        }
+        return top();
+
+      default:
+        return top();
+    }
   }
 
   // ========================================================================
